@@ -2,6 +2,8 @@ import glfw
 from OpenGL.GL import *
 import math
 import random
+import time
+#from playsound import playsound
 
 # ----------------------------
 # Posição e velocidade da nave
@@ -208,6 +210,8 @@ def atualiza_nave():
     if y > 1: y = -1
     elif y < -1: y = 1
 
+
+
 def atualiza_asteroides():
     """
     Move os asteroides e aplica wrap-around.
@@ -273,6 +277,8 @@ def atualiza_tiros():
             # Verifica distância entre tiro e asteroide
             dx = tiro['x'] - ast['x']
             dy = tiro['y'] - ast['y']
+            #dist = math.sqrt((tiro['x'] - ast['x'])**2 + (tiro['y'] - ast['y'])**2)
+            #dist = math.sqrt(dx**2 + dy**2)
             dist = math.hypot(dx, dy)
             if dist < (tiro['raio'] + ast['raio']):
                 # Colisão
@@ -288,6 +294,53 @@ def atualiza_tiros():
     # 4) Remove asteroides "destruídos" (aqueles com x = 9999, por ex.)
     ast_vivos = [a for a in asteroides if a['x'] != 9999]
     asteroides[:] = ast_vivos
+
+def verifica_colisao_nave(window):
+    for ast in asteroides:
+        dx = x - ast['x']
+        dy = y - ast['y']
+        dist = math.hypot(dx, dy)
+        raio_nave = 0.05
+
+        if dist < (raio_nave + ast['raio']):
+            print("💥 Colisão detectada! Fechando o jogo.")
+
+            # 1. Som de explosão
+            # try:
+            #     playsound("explosao.wav")
+            # except:
+            #     print("⚠️ Erro ao tocar som (verifique o arquivo).")
+
+            # 2. Efeito visual
+            explosao_visual()
+
+            # 3. Fecha a janela
+            glfw.set_window_should_close(window, True)
+            return
+        
+def explosao_visual():
+    for raio in [0.05, 0.07, 0.1]:
+        glClear(GL_COLOR_BUFFER_BIT)
+
+        # Redesenha toda a cena primeiro
+        desenha_estrelas()
+        desenha_asteroides()
+        desenha_tiros()
+        desenha_nave()  # se quiser que a nave ainda apareça
+
+        # Desenha a explosão por cima
+        glColor3f(1, 0.3, 0)
+        glBegin(GL_TRIANGLE_FAN)
+        glVertex2f(x, y)
+        for i in range(31):
+            ang = 2 * math.pi * i / 30
+            glVertex2f(x + math.cos(ang) * raio, y + math.sin(ang) * raio)
+        glEnd()
+
+        glfw.swap_buffers(glfw.get_current_context())
+        time.sleep(1)
+
+
 
 def tecla_callback(window, key, scancode, action, mods):
     if key in key_states:
@@ -320,6 +373,7 @@ def main():
         atualiza_nave()
         atualiza_asteroides()
         atualiza_tiros()
+        verifica_colisao_nave(window)
 
         # 2) Desenha cena
         desenha_estrelas()
